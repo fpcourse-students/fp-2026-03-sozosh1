@@ -31,16 +31,16 @@ task 1.1 (типы термов с числами и булями)
 -- сверяясь с интерпретатором (`make repl`, команда `:type`). Формат: `type t = Int -> Int`.
 
 t1_1a := \x. x + 1
-type t1_1a = ...
+type t1_1a = Int -> Int
 
 t1_1b := \b. if b 0 1
-type t1_1b = ...
+type t1_1b = Bool -> Int
 
 t1_1c := \f x. if (f x) x (x + 1)
-type t1_1c = ...
+type t1_1c = (Int -> Bool) -> Int -> Int
 
 t1_1d := true + 1
-type t1_1d = ...
+type t1_1d = none
 
 
 task 1.2 (наиболее общий тип: буквы и константы)
@@ -48,37 +48,37 @@ task 1.2 (наиболее общий тип: буквы и константы)
 -- K : a -> a -> a — корректная типизация, но не наиболее общая.
 
 t1_2a := \b:Bool x:a y:a. if b x y
-type t1_2a = ...
+type t1_2a = Bool -> a -> a -> a
 
 t1_2b := \x:(a -> a). x
-type t1_2b = ...
+type t1_2b = (a -> a) -> a -> a
 
 t1_2c := \x. x
-type t1_2c = ...
+type t1_2c = a -> a
 
 -- Две переменные с одним именем: какая из них возвращается?
 t1_2d := \x x. x
-type t1_2d = ...
+type t1_2d = a -> b -> b
 
 t1_2e := \x y. x y
-type t1_2e = ...
+type t1_2e = (a -> b) -> a -> b
 
 -- Тот же терм, что t1_2a, но без аннотаций: буквы и константы в одном типе.
 t1_2f := \b x y. if b x y
-type t1_2f = ...
+type t1_2f = Bool -> a -> a -> a
 
 
 task 1.3 (наиболее общий тип: продолжение)
 -- Сначала руками: какие равенства типов требует каждый терм и совместимы ли они.
 
 t1_3a := \x. x K I x
-type t1_3a = ...
+type t1_3a = none
 
 t1_3b := \f. f 1 + f true
-type t1_3b = ...
+type t1_3b = none
 
 t1_3c := \f. f 1 + f 2
-type t1_3c = ...
+type t1_3c = (Int -> Int) -> Int
 
 
 task 1.4 (население: базовые типы)
@@ -86,15 +86,21 @@ task 1.4 (население: базовые типы)
 -- их после двоеточия. αβη-эквивалентные термы не считаются. Если обитателей нет — `none`.
 -- Формат: `inhabit T: n1, n2`; число в скобках после типа — сколько обитателей нужно найти.
 
-inhabit a -> a: ...
+id_a := \x. x
+inhabit a -> a: id_a
 
-inhabit a -> a -> a (2): ...
+first2 := \x y. x
+second2 := \x y. y
+inhabit a -> a -> a (2): first2, second2
 
-inhabit a -> b -> a: ...
+const_ab := \x y. x
+inhabit a -> b -> a: const_ab
 
-inhabit a: ...
+inhabit a: none
 
-inhabit Int (2): ...
+int0 := 0
+int1 := 1
+inhabit Int (2): int0, int1
 
 
 -- ============================================================
@@ -104,11 +110,11 @@ inhabit Int (2): ...
 task 2.1 (наиболее общий тип: сложнее)
 
 t2_1a := \f g x y. f g (g x) (g y)
-type t2_1a = ...
+type t2_1a = ((a -> b) -> b -> b -> c) -> (a -> b) -> a -> a -> c
 
 -- Константа внутри терма ограничивает часть букв, остальные остаются свободными.
 t2_1b := \f g x. g (f x) (x + 1)
-type t2_1b = ...
+type t2_1b = (Int -> a) -> (a -> Int -> b) -> Int -> b
 
 
 task 2.2 (типизация по Чёрчу: комбинаторы)
@@ -116,22 +122,29 @@ task 2.2 (типизация по Чёрчу: комбинаторы)
 -- получился его наиболее общий тип. Пример: I по Чёрчу — \x:a. x.
 -- Формат: `church K = \x:… y:…. x`.
 
-church K = ...
+church K = \x:a y:b. x
 
-church B = ...
+church B = \f:(b -> c) g:(a -> b) x:a. f (g x)
 
 
 task 2.3 (население: два и бесконечно много)
 -- family T: F — терм F, который на числах Чёрча ⌜0⌝, ⌜1⌝, … даёт попарно различных
 -- обитателей T: так показывают, что обитателей бесконечно много.
 
-inhabit a -> a -> a -> a (3): ...
+first3 := \x y z. x
+second3 := \x y z. y
+third3 := \x y z. z
+inhabit a -> a -> a -> a (3): first3, second3, third3
 
-inhabit a -> b -> (a -> b -> c) -> c: ...
+apply_pair := \x y f. f x y
+inhabit a -> b -> (a -> b -> c) -> c: apply_pair
 
-family (a -> a) -> a -> a: ...
+-- F ⌜n⌝ = \s z. s (s … (s z)) — n применений s, при разных n термы различны.
+iterate_n := \n s z. n s z
+family (a -> a) -> a -> a: iterate_n
 
-inhabit (a -> b -> b) -> b -> b: ...
+skip_f := \f z. z
+inhabit (a -> b -> b) -> b -> b: skip_f
 
 
 -- Без автопроверки: на бумаге постройте дерево вывода для
